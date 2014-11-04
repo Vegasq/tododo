@@ -1,3 +1,4 @@
+#!/usr/bin/python
 from gi.repository import Gtk, Gio, GdkPixbuf
 import os
 
@@ -12,7 +13,10 @@ class AboutDialog(Gtk.AboutDialog):
         self.set_program_name("ToDoDo")
         self.set_version('1.0')
         self.set_website("http://github.com/vegasq/tododo")
-        pb = GdkPixbuf.Pixbuf.new_from_file('temp-todo-icon.png')
+        pb = GdkPixbuf.Pixbuf.new_from_file(
+            os.path.join(
+                os.path.dirname(os.path.realpath(__file__)),
+                 'temp-todo-icon.png'))
         self.set_logo(pb)
 
 
@@ -20,8 +24,7 @@ class CreateTicketDialog(Gtk.Dialog):
 
     def __init__(self, parent):
         Gtk.Dialog.use_header_bar = True
-        Gtk.Dialog.__init__(self, "Create ticket", parent, 0,
-            ('Add', Gtk.ResponseType.OK))
+        Gtk.Dialog.__init__(self, "Create ticket", parent, 0)
 
 
         self.set_default_size(350, 200)
@@ -29,10 +32,25 @@ class CreateTicketDialog(Gtk.Dialog):
 
         self.textview = Gtk.TextView(expand=True)
         self.textview.set_wrap_mode(Gtk.WrapMode.WORD_CHAR)
+        self.textview.set_right_margin(5)
+        self.textview.set_left_margin(5)
         self.textbuffer = self.textview.get_buffer()
 
         box = self.get_content_area()
         box.add(self.textview)
+
+        is_important = Gtk.Box()
+        switch = Gtk.Switch()
+        switch.connect("notify::active", lambda a,b: 1)
+        switch.set_active(False)
+        lbl = Gtk.Label()
+        lbl.set_text("Mark as important")
+        is_important.pack_start(lbl, True, True, padding=1)
+        is_important.pack_start(switch, False, False, padding=1)
+
+        self.add_action_widget(is_important, 123)
+        self.add_button('Add', Gtk.ResponseType.OK)
+
         self.show_all()
 
     def get_text(self):
@@ -52,7 +70,7 @@ class ShowTicketDialog(Gtk.Dialog):
             buttons = ('Save', Gtk.ResponseType.OK)
 
         Gtk.Dialog.__init__(
-            self, "Edit ticket", parent, 0, buttons
+            self, "Edit ticket", parent, 0
         )
 
         self.set_default_size(350, 200)
@@ -60,6 +78,9 @@ class ShowTicketDialog(Gtk.Dialog):
 
         self.textview = Gtk.TextView(expand=True)
         self.textview.set_wrap_mode(Gtk.WrapMode.WORD_CHAR)
+        self.textview.set_right_margin(5)
+        self.textview.set_left_margin(5)
+
         if is_done:
             self.textview.set_editable(False)
         self.textbuffer = self.textview.get_buffer()
@@ -67,6 +88,20 @@ class ShowTicketDialog(Gtk.Dialog):
 
         box = self.get_content_area()
         box.add(self.textview)
+
+        is_important = Gtk.Box()
+        switch = Gtk.Switch()
+        switch.connect("notify::active", lambda a,b: 1)
+        switch.set_active(False)
+        lbl = Gtk.Label()
+        lbl.set_text("Mark as important")
+        is_important.pack_start(lbl, True, True, padding=1)
+        is_important.pack_start(switch, False, False, padding=1)
+
+        self.add_action_widget(is_important, 123)
+        self.add_button(buttons[0], buttons[1])
+
+
         self.show_all()
 
     def get_text(self):
@@ -180,6 +215,7 @@ class TicketsUI():
     def get_tickets_tree_views(self, tickets, show_ticket_callback):
         ticket_stores = self.get_tickets_stores(tickets)
 
+        title = '<span foreground="#858585" size="large"><b>%s</b></span>'
         trees = []
 
         for store_type, store in enumerate(ticket_stores):
@@ -192,11 +228,9 @@ class TicketsUI():
             lbl.set_use_markup(True)
 
             if store_type == self.ACTIVE_STORE:
-                lbl.set_markup('<span foreground="#858585" size="large">'
-                               '<b>Active tasks</b></span>')
+                lbl.set_markup(title % 'Active tasks')
             elif store_type == self.DONE_STORE:
-                lbl.set_markup('<span foreground="#858585" size="large">'
-                               '<b>Done tasks</b></span>')
+                lbl.set_markup(title % 'Done tasks')
             lbl.show()
             column.set_widget(lbl)
 
