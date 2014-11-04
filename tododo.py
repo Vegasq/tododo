@@ -1,5 +1,5 @@
 #!/usr/bin/python
-from gi.repository import Gtk, Gio, GdkPixbuf
+from gi.repository import Gtk, Gio, GdkPixbuf, Pango
 import os
 
 
@@ -259,6 +259,7 @@ class TicketsUI():
             tree.set_reorderable(True)
 
             column = Gtk.TreeViewColumn()
+            column.set_max_width(400)
 
             lbl = Gtk.Label()
             lbl.set_use_markup(True)
@@ -274,7 +275,15 @@ class TicketsUI():
 
             ticket_done = Gtk.CellRendererToggle()
             ticket_done.connect("toggled", self.toggle_ticket)
+
             ticket_text = Gtk.CellRendererText()
+
+            ticket_text.props.ellipsize_set = True
+            ticket_text.props.ellipsize = Pango.EllipsizeMode.END
+            # ticket_text.props.max_width_chars = 2
+            # ticket_text.props.wrap_mode = Pango.WrapMode.WORD_CHAR
+            # ticket_text.props.wrap_width = 100
+
             ticket_important = Gtk.CellRendererPixbuf()
 
             column.pack_start(ticket_done, False)
