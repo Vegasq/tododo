@@ -40,13 +40,13 @@ class CreateTicketDialog(Gtk.Dialog):
         box.add(self.textview)
 
         is_important = Gtk.Box()
-        switch = Gtk.Switch()
-        switch.connect("notify::active", lambda a,b: 1)
-        switch.set_active(False)
+        self.switch = Gtk.Switch()
+        self.switch.connect("notify::active", lambda a,b: 1)
+        self.switch.set_active(False)
         lbl = Gtk.Label()
         lbl.set_text("Mark as important")
         is_important.pack_start(lbl, True, True, padding=1)
-        is_important.pack_start(switch, False, False, padding=1)
+        is_important.pack_start(self.switch, False, False, padding=1)
 
         self.add_action_widget(is_important, 123)
         self.add_button('Add', Gtk.ResponseType.OK)
@@ -60,10 +60,13 @@ class CreateTicketDialog(Gtk.Dialog):
             True
         )
 
+    def is_important(self):
+        return self.switch.get_active()
+
 
 class ShowTicketDialog(Gtk.Dialog):
 
-    def __init__(self, parent, text, is_done):
+    def __init__(self, parent, text, is_done, is_important):
         if is_done:
             buttons = ('Delete', Gtk.ResponseType.REJECT)
         else:
@@ -89,16 +92,18 @@ class ShowTicketDialog(Gtk.Dialog):
         box = self.get_content_area()
         box.add(self.textview)
 
-        is_important = Gtk.Box()
-        switch = Gtk.Switch()
-        switch.connect("notify::active", lambda a,b: 1)
-        switch.set_active(False)
-        lbl = Gtk.Label()
-        lbl.set_text("Mark as important")
-        is_important.pack_start(lbl, True, True, padding=1)
-        is_important.pack_start(switch, False, False, padding=1)
+        if not is_done:
+            is_important_box = Gtk.Box()
+            self.switch = Gtk.Switch()
+            self.switch.connect("notify::active", lambda a,b: 1)
+            self.switch.set_active(is_important)
+            lbl = Gtk.Label()
+            lbl.set_text("Mark as important")
+            is_important_box.pack_start(lbl, True, True, padding=1)
+            is_important_box.pack_start(self.switch, False, False, padding=1)
 
-        self.add_action_widget(is_important, 123)
+            self.add_action_widget(is_important_box, 123)
+
         self.add_button(buttons[0], buttons[1])
 
 
@@ -111,6 +116,10 @@ class ShowTicketDialog(Gtk.Dialog):
             True
         )
 
+    def is_important(self):
+        return self.switch.get_active()
+
+
 class Tickets():
     _database = '/home/nyakovlev/.config/tododo.conf'
     done = []
@@ -120,9 +129,9 @@ class Tickets():
         if not os.path.exists(self._database):
             open(self._database, 'a').close()
 
-    def create_ticket(self, text):
+    def create_ticket(self, text, is_important):
         """Append to self.active"""
-        self.active.append([0, text])
+        self.active.append([0, text, is_important])
         
         self._save()
 
@@ -132,8 +141,9 @@ class Tickets():
 
         self._save()
 
-    def update_ticket(self, index, text):
+    def update_ticket(self, index, text, is_important):
         self.active[index][1] = text
+        self.active[index][2] = is_important
 
         self._save()
 
@@ -157,15 +167,25 @@ class Tickets():
 
     def _save(self):
         """Save to file"""
-        done_lines = ["%s|%s" % (1, ticket[1]) for ticket in self.done]
-        active_lines = ["%s|%s" % (0, ticket[1]) for ticket in self.active]
-        
+        done_lines = []
+        for ticket in self.done:
+            is_important = '1' if ticket[2] is self.important else '0' 
+            done_lines.append("%s|%s|%s" % (1, ticket[1], is_important))
+
+        active_lines = []
+        for ticket in self.active:
+            is_important = '1' if ticket[2] is self.important else '0' 
+            active_lines.append("%s|%s|%s" % (0, ticket[1], is_important))
+       
         lines = "\n".join(done_lines) + "\n" + "\n".join(active_lines)
         with open(self._database, 'w') as db:
             db.write(lines)
 
-    def _load(self):
+    def _load(self, pb, npb):
         """Load from file"""
+        self.important = pb
+        self.nonimportant = npb
+
         with open(self._database, 'r') as tododo_db:
             tododo_db = tododo_db.read().splitlines()
 
@@ -174,11 +194,18 @@ class Tickets():
                     continue
 
                 ticket = line.split('|')
+                if len(ticket) == 2:
+                    ticket.append('0')
+
+                if ticket[2] == '0':
+                    important_mark = npb
+                elif ticket[2] == '1':
+                    important_mark = pb
 
                 if ticket[0] == '1':
-                    self.done.append([True, ticket[1], True])
+                    self.done.append([True, ticket[1], important_mark])
                 elif ticket[0] == '0':
-                    self.active.append([False, ticket[1], True])
+                    self.active.append([False, ticket[1], important_mark])
 
 
 class TicketsUI():
@@ -187,6 +214,15 @@ class TicketsUI():
 
     def __init__(self, tickets):
         self.tickets = tickets
+
+        self.important_pb = GdkPixbuf.Pixbuf.new_from_file(
+            os.path.join(
+                os.path.dirname(os.path.realpath(__file__)),
+                 'important.png'))
+        self.nonimportant_pb = GdkPixbuf.Pixbuf.new_from_file(
+            os.path.join(
+                os.path.dirname(os.path.realpath(__file__)),
+                 'nonimportant.png'))
 
     def toggle_ticket(self, switcher, switcher_index):
         if switcher.get_active():
@@ -199,13 +235,13 @@ class TicketsUI():
 
     def get_tickets_stores(self, tickets):
         """Returns list of tickets stores"""
-        active_ticket_store = Gtk.ListStore(bool, str, bool)
+        active_ticket_store = Gtk.ListStore(bool, str, GdkPixbuf.Pixbuf)
         tickets.active = active_ticket_store
 
-        done_ticket_store = Gtk.ListStore(bool, str, bool)
+        done_ticket_store = Gtk.ListStore(bool, str, GdkPixbuf.Pixbuf)
         tickets.done = done_ticket_store
 
-        tickets._load()
+        tickets._load(self.important_pb, self.nonimportant_pb)
 
         active_ticket_store.connect('row-deleted', self.row_deleted)
         done_ticket_store.connect('row-deleted', self.row_deleted)
@@ -243,10 +279,11 @@ class TicketsUI():
 
             column.pack_start(ticket_done, False)
             column.pack_start(ticket_text, True)
+            column.pack_start(ticket_important, False)
 
             column.add_attribute(ticket_done, "active", 0)
             column.add_attribute(ticket_text, "text", 1)
-            column.add_attribute(ticket_important, "important", 2)
+            column.add_attribute(ticket_important, "pixbuf", 2)
 
             tree.append_column(column)
             trees.append(tree)
@@ -259,6 +296,7 @@ class ToDoDo(Gtk.Window):
         self.tickets = tickets
         self._create_window()
         self._create_ticket_views()
+        self.show_all()
 
     def _create_window(self):
         Gtk.Window.__init__(self, title="ToDoDo")
@@ -301,7 +339,12 @@ class ToDoDo(Gtk.Window):
         response = dialog.run()
         if response == Gtk.ResponseType.OK:
             ticket_text = dialog.get_text()
-            self.tickets.create_ticket(ticket_text)
+            imp = dialog.is_important()
+            if imp:
+                imp = self.ticket_ui.important_pb
+            else:
+                imp = self.ticket_ui.nonimportant_pb
+            self.tickets.create_ticket(ticket_text, imp)
         dialog.destroy()
 
     def show_ticket(self, widget, index, itemb):
@@ -310,11 +353,19 @@ class ToDoDo(Gtk.Window):
         if is_done:
             if len(self.tickets.done):
                 text = self.tickets.done[index.to_string()][1]
+                is_important = self.tickets.done[index.to_string()][2]
         else:
             if len(self.tickets.active):
                 text = self.tickets.active[index.to_string()][1]
+                is_important = self.tickets.active[index.to_string()][2]
 
-        dialog = ShowTicketDialog(self, text=text, is_done=is_done)
+        if is_important is self.ticket_ui.important_pb:
+            is_important = True
+        else:
+            is_important = False
+
+        dialog = ShowTicketDialog(self, text=text, is_done=is_done,
+                                  is_important=is_important)
         result = dialog.run()
 
         if result == Gtk.ResponseType.REJECT and is_done:
@@ -322,7 +373,12 @@ class ToDoDo(Gtk.Window):
 
         if result == Gtk.ResponseType.OK:
             ticket_text = dialog.get_text()
-            self.tickets.update_ticket(index.to_string(), ticket_text)
+            imp = dialog.is_important()
+            if imp:
+                imp = self.ticket_ui.important_pb
+            else:
+                imp = self.ticket_ui.nonimportant_pb
+            self.tickets.update_ticket(index.to_string(), ticket_text, imp)
 
         dialog.destroy()
 
