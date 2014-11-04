@@ -1,6 +1,19 @@
-from gi.repository import Gtk, Gio
+from gi.repository import Gtk, Gio, GdkPixbuf
 import os
 
+
+
+class AboutDialog(Gtk.AboutDialog):
+
+    def __init__(self, parent):
+        Gtk.AboutDialog.__init__(self)
+        self.set_authors(["Nikolay Yakovlev <vegasq@gmail.com>"])
+        self.set_copyright("Nikolay Yakovlev, 2014")
+        self.set_program_name("ToDoDo")
+        self.set_version('1.0')
+        self.set_website("http://github.com/vegasq/tododo")
+        pb = GdkPixbuf.Pixbuf.new_from_file('temp-todo-icon.png')
+        self.set_logo(pb)
 
 
 class CreateTicketDialog(Gtk.Dialog):
@@ -12,6 +25,7 @@ class CreateTicketDialog(Gtk.Dialog):
 
 
         self.set_default_size(350, 200)
+        self.set_border_width(4)
 
         self.textview = Gtk.TextView(expand=True)
         self.textview.set_wrap_mode(Gtk.WrapMode.WORD_CHAR)
@@ -42,6 +56,7 @@ class ShowTicketDialog(Gtk.Dialog):
         )
 
         self.set_default_size(350, 200)
+        self.set_border_width(4)
 
         self.textview = Gtk.TextView(expand=True)
         self.textview.set_wrap_mode(Gtk.WrapMode.WORD_CHAR)
@@ -212,7 +227,7 @@ class ToDoDo(Gtk.Window):
 
     def _create_window(self):
         Gtk.Window.__init__(self, title="ToDoDo")
-        self.set_border_width(2)
+        self.set_border_width(0)
         self.set_default_size(300, 500)
 
         hb = Gtk.HeaderBar()
@@ -227,6 +242,13 @@ class ToDoDo(Gtk.Window):
         button.connect('clicked', self.create_ticket)
         button.add(image)
 
+        about_button = Gtk.Button()
+        icon = Gio.ThemedIcon(name="emblem-system-symbolic")
+        image = Gtk.Image.new_from_gicon(icon, Gtk.IconSize.BUTTON)
+        about_button.connect('clicked', self.show_about)
+        about_button.add(image)
+
+        hb.pack_end(about_button)
         hb.pack_start(button)
 
     def _create_ticket_views(self):
@@ -269,6 +291,10 @@ class ToDoDo(Gtk.Window):
 
         dialog.destroy()
 
+    def show_about(self, widget):
+        dialog = AboutDialog(self)
+        dialog.run()
+        dialog.destroy()
 
 class Do():
     def __init__(self):
