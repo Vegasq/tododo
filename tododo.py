@@ -176,9 +176,9 @@ class Tickets():
                 ticket = line.split('|')
 
                 if ticket[0] == '1':
-                    self.done.append([True, ticket[1]])
+                    self.done.append([True, ticket[1], True])
                 elif ticket[0] == '0':
-                    self.active.append([False, ticket[1]])
+                    self.active.append([False, ticket[1], True])
 
 
 class TicketsUI():
@@ -199,10 +199,10 @@ class TicketsUI():
 
     def get_tickets_stores(self, tickets):
         """Returns list of tickets stores"""
-        active_ticket_store = Gtk.ListStore(bool, str)
+        active_ticket_store = Gtk.ListStore(bool, str, bool)
         tickets.active = active_ticket_store
 
-        done_ticket_store = Gtk.ListStore(bool, str)
+        done_ticket_store = Gtk.ListStore(bool, str, bool)
         tickets.done = done_ticket_store
 
         tickets._load()
@@ -238,14 +238,15 @@ class TicketsUI():
 
             ticket_done = Gtk.CellRendererToggle()
             ticket_done.connect("toggled", self.toggle_ticket)
-
             ticket_text = Gtk.CellRendererText()
+            ticket_important = Gtk.CellRendererPixbuf()
 
             column.pack_start(ticket_done, False)
             column.pack_start(ticket_text, True)
 
-            column.add_attribute(ticket_text, "text", 1)
             column.add_attribute(ticket_done, "active", 0)
+            column.add_attribute(ticket_text, "text", 1)
+            column.add_attribute(ticket_important, "important", 2)
 
             tree.append_column(column)
             trees.append(tree)
