@@ -14,6 +14,7 @@ class CreateTicketDialog(Gtk.Dialog):
         self.set_default_size(350, 200)
 
         self.textview = Gtk.TextView(expand=True)
+        self.textview.set_wrap_mode(Gtk.WrapMode.WORD_CHAR)
         self.textbuffer = self.textview.get_buffer()
 
         box = self.get_content_area()
@@ -43,6 +44,9 @@ class ShowTicketDialog(Gtk.Dialog):
         self.set_default_size(350, 200)
 
         self.textview = Gtk.TextView(expand=True)
+        self.textview.set_wrap_mode(Gtk.WrapMode.WORD_CHAR)
+        if is_done:
+            self.textview.set_editable(False)
         self.textbuffer = self.textview.get_buffer()
         self.textbuffer.set_text(text)
 
@@ -140,6 +144,9 @@ class TicketsUI():
         else:
             self.tickets.done_ticket(switcher_index)
 
+    def row_deleted(self, widget, index):
+        self.tickets._save()
+
     def get_tickets_stores(self, tickets):
         """Returns list of tickets stores"""
         active_ticket_store = Gtk.ListStore(bool, str)
@@ -150,6 +157,9 @@ class TicketsUI():
 
         tickets._load()
 
+        active_ticket_store.connect('row-deleted', self.row_deleted)
+        done_ticket_store.connect('row-deleted', self.row_deleted)
+
         return [active_ticket_store, done_ticket_store]
 
     def get_tickets_tree_views(self, tickets, show_ticket_callback):
@@ -159,6 +169,8 @@ class TicketsUI():
 
         for store_type, store in enumerate(ticket_stores):
             tree = Gtk.TreeView(store)
+            tree.set_reorderable(True)
+
             column = Gtk.TreeViewColumn()
 
             lbl = Gtk.Label()
@@ -201,7 +213,7 @@ class ToDoDo(Gtk.Window):
     def _create_window(self):
         Gtk.Window.__init__(self, title="ToDoDo")
         self.set_border_width(2)
-        self.set_default_size(400, 500)
+        self.set_default_size(300, 500)
 
         hb = Gtk.HeaderBar()
 
