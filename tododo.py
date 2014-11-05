@@ -337,8 +337,12 @@ class ToDoDo(Gtk.Window):
         self.ticket_ui = TicketsUI(self.tickets)
         trees = self.ticket_ui.get_tickets_tree_views(self.tickets, self.show_ticket)
 
+        scroll_canvas = Gtk.ScrolledWindow()
+        scroll_canvas.set_min_content_height(400)
+        self.add(scroll_canvas)
+
         vbox = Gtk.Box(spacing=1, orientation=Gtk.Orientation.VERTICAL)
-        self.add(vbox)
+        scroll_canvas.add(vbox)
 
         vbox.pack_start(trees[TicketsUI.ACTIVE_STORE], True, True, 0)
         vbox.pack_start(trees[TicketsUI.DONE_STORE], False, False, 0)
