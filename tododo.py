@@ -1,7 +1,22 @@
 #!/usr/bin/python
+
+# Copyright (c) 2014 Nikolay Yakovlev
+# All Rights Reserved.
+#
+#    Licensed under the Apache License, Version 2.0 (the "License"); you may
+#    not use this file except in compliance with the License. You may obtain
+#    a copy of the License at
+#
+#         http://www.apache.org/licenses/LICENSE-2.0
+#
+#    Unless required by applicable law or agreed to in writing, software
+#    distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+#    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+#    License for the specific language governing permissions and limitations
+#    under the License.
+
 from gi.repository import Gtk, Gio, GdkPixbuf, Pango
 import os
-
 
 
 class AboutDialog(Gtk.AboutDialog):
@@ -245,7 +260,8 @@ class TicketsUI():
     def get_tickets_tree_views(self, tickets, show_ticket_callback):
         ticket_stores = self.get_tickets_stores(tickets)
 
-        title = '<span foreground="#858585" size="large"><b>%s</b></span>'
+        # large, x-large
+        title = '<span foreground="#858585" size="medium"><b>%s</b></span>'
         trees = []
 
         for store_type, store in enumerate(ticket_stores):
@@ -278,6 +294,12 @@ class TicketsUI():
             ticket_important = Gtk.CellRendererText()
             ticket_important.props.foreground = 'red'
 
+            ticket_important.props.size_set = True
+            ticket_text.props.size_set = True
+
+            # 9, 10, 11, 12, 13, 14
+            ticket_important.props.size_points = 10
+            ticket_text.props.size_points = 10
 
             column.pack_start(ticket_done, False)
             column.pack_start(ticket_text, True)
@@ -393,6 +415,7 @@ class ToDoDo(Gtk.Window):
         dialog.run()
         dialog.destroy()
 
+
 class Do():
     def __init__(self):
         tickets = Tickets()
@@ -401,5 +424,6 @@ class Do():
         main_window.connect("delete-event", Gtk.main_quit)
         main_window.show_all()
         Gtk.main()
+
 
 do = Do()
