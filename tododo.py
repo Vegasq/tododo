@@ -215,14 +215,8 @@ class TicketsUI():
     def __init__(self, tickets):
         self.tickets = tickets
 
-        self.important_pb = GdkPixbuf.Pixbuf.new_from_file(
-            os.path.join(
-                os.path.dirname(os.path.realpath(__file__)),
-                 'important.png'))
-        self.nonimportant_pb = GdkPixbuf.Pixbuf.new_from_file(
-            os.path.join(
-                os.path.dirname(os.path.realpath(__file__)),
-                 'nonimportant.png'))
+        self.important_pb = '!'
+        self.nonimportant_pb = ''
 
     def toggle_ticket(self, switcher, switcher_index):
         if switcher.get_active():
@@ -235,10 +229,10 @@ class TicketsUI():
 
     def get_tickets_stores(self, tickets):
         """Returns list of tickets stores"""
-        active_ticket_store = Gtk.ListStore(bool, str, GdkPixbuf.Pixbuf)
+        active_ticket_store = Gtk.ListStore(bool, str, str)
         tickets.active = active_ticket_store
 
-        done_ticket_store = Gtk.ListStore(bool, str, GdkPixbuf.Pixbuf)
+        done_ticket_store = Gtk.ListStore(bool, str, str)
         tickets.done = done_ticket_store
 
         tickets._load(self.important_pb, self.nonimportant_pb)
@@ -280,11 +274,10 @@ class TicketsUI():
 
             ticket_text.props.ellipsize_set = True
             ticket_text.props.ellipsize = Pango.EllipsizeMode.END
-            # ticket_text.props.max_width_chars = 2
-            # ticket_text.props.wrap_mode = Pango.WrapMode.WORD_CHAR
-            # ticket_text.props.wrap_width = 100
 
-            ticket_important = Gtk.CellRendererPixbuf()
+            ticket_important = Gtk.CellRendererText()
+            ticket_important.props.foreground = 'red'
+
 
             column.pack_start(ticket_done, False)
             column.pack_start(ticket_text, True)
@@ -292,7 +285,7 @@ class TicketsUI():
 
             column.add_attribute(ticket_done, "active", 0)
             column.add_attribute(ticket_text, "text", 1)
-            column.add_attribute(ticket_important, "pixbuf", 2)
+            column.add_attribute(ticket_important, "text", 2)
 
             tree.append_column(column)
             trees.append(tree)
