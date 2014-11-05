@@ -17,6 +17,7 @@
 
 from gi.repository import Gtk, Gio, GdkPixbuf, Pango
 import os
+import base64
 
 
 class AboutDialog(Gtk.AboutDialog):
@@ -146,7 +147,7 @@ class Tickets():
 
     def create_ticket(self, text, is_important):
         """Append to self.active"""
-        self.active.append([0, text, is_important])
+        self.active.append([0, is_important, text, text.split('\n')[0]])
         
         self._save()
 
@@ -157,8 +158,9 @@ class Tickets():
         self._save()
 
     def update_ticket(self, index, text, is_important):
-        self.active[index][1] = text
-        self.active[index][2] = is_important
+        self.active[index][ToDoDo.TEXT_INDEX] = text
+        self.active[index][ToDoDo.IMPORTANT_INDEX] = is_important
+        self.active[index][ToDoDo.HEADER_INDEX] = text.split('\n')[0]
 
         self._save()
 
@@ -184,13 +186,15 @@ class Tickets():
         """Save to file"""
         done_lines = []
         for ticket in self.done:
-            is_important = '1' if ticket[2] is self.important else '0' 
-            done_lines.append("%s|%s|%s" % (1, ticket[1], is_important))
+            is_important = '1' if ticket[ToDoDo.IMPORTANT_INDEX] is self.important else '0' 
+            ticket_value = base64.b64encode(ticket[ToDoDo.TEXT_INDEX])
+            done_lines.append("%s|%s|%s" % (1, is_important, ticket_value))
 
         active_lines = []
         for ticket in self.active:
-            is_important = '1' if ticket[2] is self.important else '0' 
-            active_lines.append("%s|%s|%s" % (0, ticket[1], is_important))
+            is_important = '1' if ticket[ToDoDo.IMPORTANT_INDEX] is self.important else '0' 
+            ticket_value = base64.b64encode(ticket[ToDoDo.TEXT_INDEX])
+            active_lines.append("%s|%s|%s" % (0, is_important, ticket_value))
        
         lines = "\n".join(done_lines) + "\n" + "\n".join(active_lines)
         with open(self._database, 'w') as db:
@@ -212,15 +216,17 @@ class Tickets():
                 if len(ticket) == 2:
                     ticket.append('0')
 
-                if ticket[2] == '0':
+                if ticket[ToDoDo.IMPORTANT_INDEX] == '0':
                     important_mark = npb
-                elif ticket[2] == '1':
+                elif ticket[ToDoDo.IMPORTANT_INDEX] == '1':
                     important_mark = pb
 
-                if ticket[0] == '1':
-                    self.done.append([True, ticket[1], important_mark])
+                ticket_value = base64.b64decode(ticket[ToDoDo.TEXT_INDEX])
+                ticket_head = ticket_value.split('\n')[0]
+                if ticket[ToDoDo.ACTIVITY_INDEX] == '1':
+                    self.done.append([True, important_mark, ticket_value, ticket_head])
                 elif ticket[0] == '0':
-                    self.active.append([False, ticket[1], important_mark])
+                    self.active.append([False, important_mark, ticket_value, ticket_head])
 
 
 class TicketsUI():
@@ -244,10 +250,10 @@ class TicketsUI():
 
     def get_tickets_stores(self, tickets):
         """Returns list of tickets stores"""
-        active_ticket_store = Gtk.ListStore(bool, str, str)
+        active_ticket_store = Gtk.ListStore(bool, str, str, str)
         tickets.active = active_ticket_store
 
-        done_ticket_store = Gtk.ListStore(bool, str, str)
+        done_ticket_store = Gtk.ListStore(bool, str, str, str)
         tickets.done = done_ticket_store
 
         tickets._load(self.important_pb, self.nonimportant_pb)
@@ -306,8 +312,8 @@ class TicketsUI():
             column.pack_start(ticket_important, False)
 
             column.add_attribute(ticket_done, "active", 0)
-            column.add_attribute(ticket_text, "text", 1)
-            column.add_attribute(ticket_important, "text", 2)
+            column.add_attribute(ticket_important, "text", 1)
+            column.add_attribute(ticket_text, "text", 3)
 
             tree.append_column(column)
             trees.append(tree)
@@ -315,6 +321,10 @@ class TicketsUI():
 
 
 class ToDoDo(Gtk.Window):
+    ACTIVITY_INDEX = 0
+    IMPORTANT_INDEX = 1
+    TEXT_INDEX = 2
+    HEADER_INDEX = 3
 
     def __init__(self, tickets):
         self.tickets = tickets
@@ -380,12 +390,12 @@ class ToDoDo(Gtk.Window):
 
         if is_done:
             if len(self.tickets.done):
-                text = self.tickets.done[index.to_string()][1]
-                is_important = self.tickets.done[index.to_string()][2]
+                text = self.tickets.done[index.to_string()][ToDoDo.TEXT_INDEX]
+                is_important = self.tickets.done[index.to_string()][ToDoDo.IMPORTANT_INDEX]
         else:
             if len(self.tickets.active):
-                text = self.tickets.active[index.to_string()][1]
-                is_important = self.tickets.active[index.to_string()][2]
+                text = self.tickets.active[index.to_string()][ToDoDo.TEXT_INDEX]
+                is_important = self.tickets.active[index.to_string()][ToDoDo.IMPORTANT_INDEX]
 
         if is_important is self.ticket_ui.important_pb:
             is_important = True
