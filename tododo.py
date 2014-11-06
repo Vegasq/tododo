@@ -18,6 +18,131 @@
 from gi.repository import Gtk, Gio, GdkPixbuf, Pango
 import os
 import base64
+import ConfigParser
+
+class Settings(Gtk.Dialog):
+    STORAGE = 'STORAGE'
+    DB = 'db_path'
+    FONT_SIZE = 'font_size'
+
+    DB_FILENAME = 'tododo.db'
+
+    @staticmethod
+    def get_config_path():
+        home_path = os.getenv("HOME")
+        return os.path.join(
+            home_path,
+            '.config',
+            'tododo',
+            'tododo.conf'
+        )
+
+    @staticmethod
+    def get_settings():
+        config = ConfigParser.ConfigParser()
+        config.read(Settings.get_config_path())
+
+        if Settings.STORAGE not in config.sections():
+            config.add_section(Settings.STORAGE)
+
+        try:
+            config.get(Settings.STORAGE, Settings.DB)
+        except ConfigParser.NoOptionError:
+            home_path = os.getenv("HOME")
+            config.set(Settings.STORAGE, Settings.DB, os.path.join(
+                home_path,
+                '.config',
+                'tododo',
+                'tododo.db'
+            ))
+
+        try:
+            config.get(Settings.STORAGE, Settings.FONT_SIZE)
+        except ConfigParser.NoOptionError:
+            config.set(Settings.STORAGE, Settings.FONT_SIZE, '10')
+
+        return config
+
+    @staticmethod
+    def get_db_path():
+        return Settings.get_settings().get(Settings.STORAGE,
+                                           Settings.DB)
+
+    @staticmethod
+    def get_font_size():
+        return int(float(Settings.get_settings().get(Settings.STORAGE,
+                                             Settings.FONT_SIZE)))
+
+    @staticmethod
+    def update_db_path(a):
+        settings = Settings.get_settings()
+        settings.set(Settings.STORAGE, Settings.DB,
+            os.path.join(a.get_filename(), Settings.DB_FILENAME))
+        Settings.save_settings(settings)
+
+    @staticmethod
+    def update_font_size(a):
+        settings = Settings.get_settings()
+        settings.set(Settings.STORAGE, Settings.FONT_SIZE, a.get_value())
+        Settings.save_settings(settings)
+
+    @staticmethod
+    def save_settings(settings):
+        settings.write(open(Settings.get_config_path(), 'w'))
+
+    def __init__(self, parent):
+        Gtk.Dialog.__init__(self, "Settings", parent, 0)
+
+        self.set_default_size(450, 110)
+        self.set_border_width(4)
+
+        box = self.get_content_area()
+        list_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        box.add(list_box)
+
+        select_db_dialog = Gtk.FileChooserDialog(
+            'Select DB path',
+            self,
+            Gtk.FileChooserAction.SELECT_FOLDER,
+            ("Select",
+            Gtk.ResponseType.APPLY)
+        )
+        select_db_dialog.connect('current-folder-changed', Settings.update_db_path)
+        select_db_dialog.set_default_size(350, 200)
+
+        select_txt = Gtk.Label('Database path')
+        select_txt.set_justify(Gtk.Justification.LEFT)
+        select_db = Gtk.FileChooserButton.new_with_dialog(select_db_dialog)
+        select_db.set_current_folder(Settings.get_db_path())
+        select_db_line = Gtk.Box()
+        select_db_line.pack_start(select_txt, False, False, 0)
+        select_db_line.pack_end(select_db, False, False, 0)
+
+        list_box.pack_start(select_db_line, True, True, 0)
+
+        font_size_btn = Gtk.Label('Font size')
+        font_size_btn.set_justify(Gtk.Justification.LEFT)
+        spin = Gtk.SpinButton.new_with_range(8, 15, 1)
+        spin.connect('value-changed', Settings.update_font_size)
+        spin.set_value(Settings.get_font_size())
+        spin_line = Gtk.Box()
+        spin_line.pack_start(font_size_btn, False, False, 0)
+        spin_line.pack_end(spin, False, False, 0)
+
+        list_box.pack_start(spin_line, True, True, 0)
+        list_box.pack_start(select_db_line, True, True, 0)
+
+
+        about = Gtk.Button('About')
+        about.connect('clicked', parent.show_about)
+        about_line = Gtk.Box()
+        about_line.pack_end(about, False, False, 0)
+
+        list_box.pack_start(about_line, True, True, 0)
+
+        list_box.show()
+
+        self.show_all()
 
 
 class AboutDialog(Gtk.AboutDialog):
@@ -137,13 +262,22 @@ class ShowTicketDialog(Gtk.Dialog):
 
 
 class Tickets():
-    _database = '/home/nyakovlev/.config/tododo.conf'
+    _database = '/home/nyakovlev/.config/tododo/tododo.db'
     done = []
     active = []
 
     def __init__(self):
-        if not os.path.exists(self._database):
-            open(self._database, 'a').close()
+        home_path = os.getenv("HOME")
+        tododo_conf_folder = os.path.join(
+            home_path,
+            '.config',
+            'tododo'
+        )
+        if not os.path.exists(tododo_conf_folder):
+            os.mkdir(tododo_conf_folder)
+
+        if not os.path.exists(Settings.get_db_path()):
+            open(Settings.get_db_path(), 'a').close()
 
     def create_ticket(self, text, is_important):
         """Append to self.active"""
@@ -197,7 +331,7 @@ class Tickets():
             active_lines.append("%s|%s|%s" % (0, is_important, ticket_value))
        
         lines = "\n".join(done_lines) + "\n" + "\n".join(active_lines)
-        with open(self._database, 'w') as db:
+        with open(Settings.get_db_path(), 'w') as db:
             db.write(lines)
 
     def _load(self, pb, npb):
@@ -205,7 +339,7 @@ class Tickets():
         self.important = pb
         self.nonimportant = npb
 
-        with open(self._database, 'r') as tododo_db:
+        with open(Settings.get_db_path(), 'r') as tododo_db:
             tododo_db = tododo_db.read().splitlines()
 
             for line in tododo_db:
@@ -303,9 +437,8 @@ class TicketsUI():
             ticket_important.props.size_set = True
             ticket_text.props.size_set = True
 
-            # 9, 10, 11, 12, 13, 14
-            ticket_important.props.size_points = 10
-            ticket_text.props.size_points = 10
+            ticket_important.props.size_points = int(Settings.get_font_size())
+            ticket_text.props.size_points = int(Settings.get_font_size())
 
             column.pack_start(ticket_done, False)
             column.pack_start(ticket_text, True)
@@ -352,7 +485,7 @@ class ToDoDo(Gtk.Window):
         about_button = Gtk.Button()
         icon = Gio.ThemedIcon(name="emblem-system-symbolic")
         image = Gtk.Image.new_from_gicon(icon, Gtk.IconSize.BUTTON)
-        about_button.connect('clicked', self.show_about)
+        about_button.connect('clicked', self.show_settings)
         about_button.add(image)
 
         hb.pack_end(about_button)
@@ -422,6 +555,11 @@ class ToDoDo(Gtk.Window):
 
     def show_about(self, widget):
         dialog = AboutDialog(self)
+        dialog.run()
+        dialog.destroy()
+
+    def show_settings(self, widget):
+        dialog = Settings(self)
         dialog.run()
         dialog.destroy()
 
