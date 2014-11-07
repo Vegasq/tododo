@@ -473,16 +473,7 @@ class ToDoDo(Gtk.Window):
 
     def _create_window(self):
         Gtk.Window.__init__(self, title="ToDoDo")
-        self.set_icon_from_file('/home/nyakovlev/projects/tododo/temp-todo-icon.png')
-
-        statusIcon = Gtk.StatusIcon()
-        # load it
-        statusIcon.set_from_file('/home/nyakovlev/projects/tododo/temp-todo-icon.png')
-        # show it
-        statusIcon.set_visible(True)
-
-        self.icon = self.render_icon(Gtk.STOCK_FLOPPY, 1)
-        self.set_icon(self.icon)
+        self.set_icon_from_file('temp-todo-icon.png')
 
         self.set_border_width(0)
         self.set_default_size(300, 500)
@@ -526,6 +517,8 @@ class ToDoDo(Gtk.Window):
     def _create_menu_popupover(self, app_menu_btn):
         self.popover = Gtk.Popover.new(app_menu_btn)
         self.popover.set_size_request(300, -1)
+        popover_botle = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        self.popover.add(popover_botle)
 
         font_size_label = Gtk.Label('Font size')
         font_size_label.set_justify(Gtk.Justification.LEFT)
@@ -536,7 +529,14 @@ class ToDoDo(Gtk.Window):
         spin_line.pack_start(font_size_label, True, True, 0)
         spin_line.pack_end(spin, False, False, 0)
 
-        self.popover.add(spin_line)
+        spin_about_line = Gtk.Box()
+        about = Gtk.Button('About')
+        about.connect('clicked', self.show_about)
+        about_line = Gtk.Box()
+        spin_about_line.pack_end(about, False, False, 0)
+
+        popover_botle.add(spin_line)
+        popover_botle.add(spin_about_line)
 
     def _create_ticket_views(self):
         self.ticket_ui = TicketsUI(self.tickets)
@@ -630,5 +630,5 @@ class Do():
         main_window.show_all()
         Gtk.main()
 
-
-do = Do()
+if __name__ == '__main__':
+    do = Do()
