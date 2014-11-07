@@ -130,8 +130,6 @@ class Settings(Gtk.Dialog):
         spin_line.pack_end(spin, False, False, 0)
 
         list_box.pack_start(spin_line, True, True, 0)
-        list_box.pack_start(select_db_line, True, True, 0)
-
 
         about = Gtk.Button('About')
         about.connect('clicked', parent.show_about)
@@ -367,6 +365,8 @@ class TicketsUI():
     ACTIVE_STORE = 0
     DONE_STORE = 1
 
+    font_size_related_items = []
+
     def __init__(self, tickets):
         self.tickets = tickets
 
@@ -439,6 +439,8 @@ class TicketsUI():
 
             ticket_important.props.size_points = int(Settings.get_font_size())
             ticket_text.props.size_points = int(Settings.get_font_size())
+            self.font_size_related_items.append(ticket_important)
+            self.font_size_related_items.append(ticket_text)
 
             column.pack_start(ticket_done, False)
             column.pack_start(ticket_text, True)
@@ -451,6 +453,10 @@ class TicketsUI():
             tree.append_column(column)
             trees.append(tree)
         return trees
+
+
+class MainMenu(Gio.MenuModel):
+    pass
 
 
 class ToDoDo(Gtk.Window):
@@ -467,6 +473,17 @@ class ToDoDo(Gtk.Window):
 
     def _create_window(self):
         Gtk.Window.__init__(self, title="ToDoDo")
+        self.set_icon_from_file('/home/nyakovlev/projects/tododo/temp-todo-icon.png')
+
+        statusIcon = Gtk.StatusIcon()
+        # load it
+        statusIcon.set_from_file('/home/nyakovlev/projects/tododo/temp-todo-icon.png')
+        # show it
+        statusIcon.set_visible(True)
+
+        self.icon = self.render_icon(Gtk.STOCK_FLOPPY, 1)
+        self.set_icon(self.icon)
+
         self.set_border_width(0)
         self.set_default_size(300, 500)
 
@@ -487,9 +504,39 @@ class ToDoDo(Gtk.Window):
         image = Gtk.Image.new_from_gicon(icon, Gtk.IconSize.BUTTON)
         about_button.connect('clicked', self.show_settings)
         about_button.add(image)
+        # hb.pack_end(about_button)
 
-        hb.pack_end(about_button)
+        app_menu_btn = Gtk.Button()
+        icon = Gio.ThemedIcon(name="emblem-system-symbolic")
+        image = Gtk.Image.new_from_gicon(icon, Gtk.IconSize.BUTTON)
+        app_menu_btn.add(image)
+        app_menu_btn.connect('clicked', self.show_menu)
+
+        self._create_menu_popupover(app_menu_btn)
+
+        hb.pack_end(app_menu_btn)
         hb.pack_start(button)
+
+    def _update_font(self, widget):
+        if hasattr(self, 'ticket_ui'):
+            Settings.update_font_size(widget)
+            for item in self.ticket_ui.font_size_related_items:
+                item.props.size_points = Settings.get_font_size()
+
+    def _create_menu_popupover(self, app_menu_btn):
+        self.popover = Gtk.Popover.new(app_menu_btn)
+        self.popover.set_size_request(300, -1)
+
+        font_size_label = Gtk.Label('Font size')
+        font_size_label.set_justify(Gtk.Justification.LEFT)
+        spin = Gtk.SpinButton.new_with_range(8, 15, 1)
+        spin.connect('value-changed', self._update_font)
+        spin.set_value(Settings.get_font_size())
+        spin_line = Gtk.Box()
+        spin_line.pack_start(font_size_label, True, True, 0)
+        spin_line.pack_end(spin, False, False, 0)
+
+        self.popover.add(spin_line)
 
     def _create_ticket_views(self):
         self.ticket_ui = TicketsUI(self.tickets)
@@ -519,8 +566,9 @@ class ToDoDo(Gtk.Window):
         dialog.destroy()
 
     def show_ticket(self, widget, index, itemb):
+        if not len(widget.get_selection().get_selected_rows()[0]):
+            return
         is_done = widget.get_selection().get_selected_rows()[0][0][0]
-
         if is_done:
             if len(self.tickets.done):
                 text = self.tickets.done[index.to_string()][ToDoDo.TEXT_INDEX]
@@ -562,6 +610,15 @@ class ToDoDo(Gtk.Window):
         dialog = Settings(self)
         dialog.run()
         dialog.destroy()
+
+    def show_menu(self, widget):
+        if self.popover.get_visible():
+            self.popover.hide()
+        else:
+            self.popover.show_all()
+
+    def show_main_menu(self, widget):
+        pass
 
 
 class Do():
