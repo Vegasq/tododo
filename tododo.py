@@ -118,6 +118,10 @@ class ToDoDo(Gtk.Window):
 
             column = self._get_tree_columns(store_type)
             tree.append_column(column)
+            if store_type == constants.DONE_STORE:
+                self.done_tree_view = tree
+            else:
+                self.active_tree_view = tree
 
         return trees
 
@@ -143,13 +147,13 @@ class ToDoDo(Gtk.Window):
         hb.pack_start(create_ticket_button)
 
         # Create main menu
-        main_menu_button = Gtk.Button()
-        icon = Gio.ThemedIcon(name="emblem-system-symbolic")
-        image = Gtk.Image.new_from_gicon(icon, Gtk.IconSize.BUTTON)
-        main_menu_button.add(image)
-        main_menu_button.connect('clicked', self.show_menu)
-        self._create_menu_popupover(main_menu_button)
-        hb.pack_end(main_menu_button)
+        # main_menu_button = Gtk.Button()
+        # icon = Gio.ThemedIcon(name="emblem-system-symbolic")
+        # image = Gtk.Image.new_from_gicon(icon, Gtk.IconSize.BUTTON)
+        # main_menu_button.add(image)
+        # main_menu_button.connect('clicked', self.show_menu)
+        # self._create_menu_popupover(main_menu_button)
+        # hb.pack_end(main_menu_button)
 
     def _update_font(self, widget):
         Settings.update_font_size(widget)
@@ -196,17 +200,17 @@ class ToDoDo(Gtk.Window):
         vbox.pack_start(trees[constants.DONE_STORE], False, False, 0)
 
     def create_ticket(self, widget):
-        dialog = CreateTicketDialog(self)
-        response = dialog.run()
+        self.create_ticket_dialog = CreateTicketDialog(self)
+        response = self.create_ticket_dialog.run()
         if response == Gtk.ResponseType.OK:
-            ticket_text = dialog.get_text()
-            imp = dialog.is_important()
+            ticket_text = self.create_ticket_dialog.get_text()
+            imp = self.create_ticket_dialog.is_important()
             if imp:
                 imp = self.important_pb
             else:
                 imp = self.nonimportant_pb
             self.tickets.create_ticket(ticket_text, imp)
-        dialog.destroy()
+        self.create_ticket_dialog.destroy()
 
     def show_ticket(self, widget, index, itemb):
         #TODO(vegasq) Refactor me please
@@ -227,12 +231,37 @@ class ToDoDo(Gtk.Window):
         else:
             is_important = False
 
-        dialog = ShowTicketDialog(self, text=text, is_done=is_done,
-                                  is_important=is_important)
-        result = dialog.run()
-        self._show_ticket_result(dialog, result, index)
+        self.show_ticket_dialog = ShowTicketDialog(self, text=text, is_done=is_done,
+                                                   is_important=is_important)
+        result = self.show_ticket_dialog.run()
+        self._show_ticket_result(self.show_ticket_dialog, result, index, is_done)
 
-    def _show_ticket_result(self, dialog, result, index):
+    def delete_ticket(self, label):
+        selected = self.done_tree_view.get_selection()
+        self.tickets.delete_ticket(selected.get_selected_rows()[1][0])
+        self.show_ticket_dialog.destroy()
+
+    def new_ticket(self, label):
+        selected = self.active_tree_view.get_selection()
+
+        ticket_text = self.create_ticket_dialog.get_text()
+        imp = self.create_ticket_dialog.is_important()
+        if imp:
+            imp = self.important_pb
+        else:
+            imp = self.nonimportant_pb
+        self.tickets.create_ticket(ticket_text, imp)
+        self.create_ticket_dialog.destroy()
+
+    def save_ticket(self, label):
+        selected = self.active_tree_view.get_selection()
+        self.tickets.update_ticket(
+            selected.get_selected_rows()[1][0],
+            self.show_ticket_dialog.get_text(),
+            '!' if self.show_ticket_dialog.is_important() else '')
+        self.show_ticket_dialog.destroy()
+
+    def _show_ticket_result(self, dialog, result, index, is_done):
         if result == Gtk.ResponseType.REJECT and is_done:
             self.tickets.delete_ticket(index)
         elif result == Gtk.ResponseType.OK:

@@ -176,6 +176,11 @@ class CreateTicketDialog(Gtk.Dialog):
         hb.props.title = "Create ticket"
         self.set_titlebar(hb)
 
+        create_ticket_button = Gtk.Button('Create')
+        create_ticket_button.connect('clicked',
+                                     parent.new_ticket)
+        hb.pack_start(create_ticket_button)
+
         self.set_default_size(350, 200)
         self.set_border_width(4)
 
@@ -198,7 +203,6 @@ class CreateTicketDialog(Gtk.Dialog):
         is_important.pack_start(self.switch, False, False, padding=1)
 
         self.add_action_widget(is_important, 123)
-        self.add_button('Add', Gtk.ResponseType.OK)
 
         self.show_all()
 
@@ -216,18 +220,27 @@ class CreateTicketDialog(Gtk.Dialog):
 class ShowTicketDialog(Gtk.Dialog):
 
     def __init__(self, parent, text, is_done, is_important):
-        if is_done:
-            buttons = ('Delete', Gtk.ResponseType.REJECT)
-        else:
-            buttons = ('Save', Gtk.ResponseType.OK)
-
         Gtk.Dialog.__init__(
             self, "Edit ticket", parent, 0
         )
+
         hb = Gtk.HeaderBar()
         hb.set_show_close_button(True)
-        hb.props.title = "Edit ticket"
         self.set_titlebar(hb)
+
+        if is_done:
+            # Create ticket button
+            delete_ticket_button = Gtk.Button('Delete')
+            delete_ticket_button.connect('clicked',
+                                         parent.delete_ticket)
+            hb.pack_start(delete_ticket_button)
+            hb.props.title = "Done ticket"
+        else:
+            save_ticket_button = Gtk.Button('Save')
+            save_ticket_button.connect('clicked',
+                                       parent.save_ticket)
+            hb.pack_start(save_ticket_button)
+            hb.props.title = "Update ticket"
 
         self.set_default_size(350, 200)
         self.set_border_width(4)
@@ -256,9 +269,6 @@ class ShowTicketDialog(Gtk.Dialog):
             is_important_box.pack_start(self.switch, False, False, padding=1)
 
             self.add_action_widget(is_important_box, 123)
-
-        self.add_button(buttons[0], buttons[1])
-
 
         self.show_all()
 
