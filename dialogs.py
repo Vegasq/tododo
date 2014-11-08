@@ -15,7 +15,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
-from gi.repository import Gtk, GdkPixbuf
+from gi.repository import Gtk, GdkPixbuf, Gio
 import os
 import ConfigParser
 
@@ -147,6 +147,12 @@ class AboutDialog(Gtk.AboutDialog):
 
     def __init__(self, parent):
         Gtk.AboutDialog.__init__(self)
+
+        hb = Gtk.HeaderBar()
+        hb.set_show_close_button(True)
+        hb.props.title = "About"
+        self.set_titlebar(hb)
+
         self.set_authors(["Nikolay Yakovlev <vegasq@gmail.com>"])
         self.set_copyright("Nikolay Yakovlev, 2014")
         self.set_program_name("ToDoDo")
@@ -165,6 +171,10 @@ class CreateTicketDialog(Gtk.Dialog):
         Gtk.Dialog.use_header_bar = True
         Gtk.Dialog.__init__(self, "Create ticket", parent, 0)
 
+        hb = Gtk.HeaderBar()
+        hb.set_show_close_button(True)
+        hb.props.title = "Create ticket"
+        self.set_titlebar(hb)
 
         self.set_default_size(350, 200)
         self.set_border_width(4)
@@ -214,6 +224,10 @@ class ShowTicketDialog(Gtk.Dialog):
         Gtk.Dialog.__init__(
             self, "Edit ticket", parent, 0
         )
+        hb = Gtk.HeaderBar()
+        hb.set_show_close_button(True)
+        hb.props.title = "Edit ticket"
+        self.set_titlebar(hb)
 
         self.set_default_size(350, 200)
         self.set_border_width(4)
