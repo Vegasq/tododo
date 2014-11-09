@@ -19,7 +19,6 @@ from gi.repository import Gtk, Gio, GdkPixbuf, Pango
 import os
 import base64
 import ConfigParser
-from dialogs import Settings
 import constants
 
 
@@ -28,7 +27,8 @@ class Tickets():
     done = []
     active = []
 
-    def __init__(self):
+    def __init__(self, settings):
+        self.settings = settings
         home_path = os.getenv("HOME")
         tododo_conf_folder = os.path.join(
             home_path,
@@ -38,8 +38,8 @@ class Tickets():
         if not os.path.exists(tododo_conf_folder):
             os.mkdir(tododo_conf_folder)
 
-        if not os.path.exists(Settings.get_db_path()):
-            open(Settings.get_db_path(), 'a').close()
+        if not os.path.exists(self.settings.get_db_path()):
+            open(self.settings.get_db_path(), 'a').close()
 
     def create_ticket(self, text, is_important):
         """Append to self.active"""
@@ -93,7 +93,7 @@ class Tickets():
             active_lines.append("%s|%s|%s" % (0, is_important, ticket_value))
        
         lines = "\n".join(done_lines) + "\n" + "\n".join(active_lines)
-        with open(Settings.get_db_path(), 'w') as db:
+        with open(self.settings.get_db_path(), 'w') as db:
             db.write(lines)
 
     def _load(self, pb, npb):
@@ -101,7 +101,7 @@ class Tickets():
         self.important = pb
         self.nonimportant = npb
 
-        with open(Settings.get_db_path(), 'r') as tododo_db:
+        with open(self.settings.get_db_path(), 'r') as tododo_db:
             tododo_db = tododo_db.read().splitlines()
 
             for line in tododo_db:

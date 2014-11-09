@@ -1,0 +1,77 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: ToDoDo\n"
+"POT-Creation-Date: 2014-11-09 11:33+EET\n"
+"PO-Revision-Date: 2014-11-09 12:01+0300\n"
+"Last-Translator: Niko Yakovlev <vegasq@gmail.com>\n"
+"Language-Team: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: pygettext.py 1.5\n"
+"X-Generator: Poedit 1.5.4\n"
+"Language: uk_UA\n"
+
+#: tododo.py:78
+msgid "Active tasks"
+msgstr "Поточні"
+
+#: tododo.py:80
+msgid "Done tasks"
+msgstr "Виконані"
+
+#: tododo.py:189 tododo.py:409 tododo.py:428
+msgid "About"
+msgstr "Про авторів"
+
+#: tododo.py:369
+msgid "Settings"
+msgstr "Налашування"
+
+#: tododo.py:379
+msgid "Select DB path"
+msgstr ""
+
+#: tododo.py:382
+msgid "Select"
+msgstr "Вібрать"
+
+#: tododo.py:388
+msgid "Database path"
+msgstr ""
+
+#: tododo.py:398
+msgid "Font size"
+msgstr ""
+
+#: tododo.py:447 tododo.py:451
+msgid "Create ticket"
+msgstr "Добавить задачу"
+
+#: tododo.py:454
+msgid "Create"
+msgstr "Добавить"
+
+#: tododo.py:476 tododo.py:542
+msgid "Mark as important"
+msgstr "Отметить как важное"
+
+#: tododo.py:499
+msgid "Edit ticket"
+msgstr "Редактирование"
+
+#: tododo.py:508
+msgid "Delete"
+msgstr "Удалить"
+
+#: tododo.py:512
+msgid "Done ticket"
+msgstr "Віполненая задача"
+
+#: tododo.py:514
+msgid "Save"
+msgstr "Сохранить"
+
+#: tododo.py:518
+msgid "Update ticket"
+msgstr "Редактирование"
